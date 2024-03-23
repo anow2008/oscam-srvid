@@ -100,7 +100,7 @@ create_srvid_file "mcafrica" "1800"
 create_srvid_file "ncplus" "0100,0B01"
 # Platforma Canal+ - End #
 create_srvid_file "numericable" "0100"
-create_srvid_file "neosat" "5581,4AEE"
+create_srvid_file "neosat" "5581,4AEE,0B00"
 create_srvid_file "nos" "1802"
 create_srvid_file "nova" "0604"
 create_srvid_file "ntvrussia" "0000"
