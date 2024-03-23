@@ -123,7 +123,9 @@ create_srvid_file "viasat" "090F,093E,FFFE"
 create_srvid_file "visiontv" "0931,FFFE"
 create_srvid_file "vivacom" "09BD,FFFE"
 create_srvid_file "viasatua" "5604,FFFE"
-
+create_srvid_file "volnatelka" "0668,069A"
+create_srvid_file "xtra" "0000"
+create_srvid_file "zdfvision" "FFFE"
 ### merge all generated ".srvid" files into one file + move this new file to the Oscam config-dir:
 echo "$HEADER" > $OSCAM_SRVID
 echo -e "### File creation date: $(date '+%Y-%m-%d')\n" >> $OSCAM_SRVID
