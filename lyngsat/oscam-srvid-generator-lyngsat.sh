@@ -80,7 +80,6 @@ echo "$HEADER"
 OSCAM_SRVID="oscam.srvid"
 
 ### create temporary ".srvid" files:
-create_srvid_file "Skylink" "0D96,0624" "Skylink"
 create_srvid_file "Antik-Sat" "0B00" "AntikSAT"
 create_srvid_file "Yes" "090D,0930:01F9" "Yes"
 create_srvid_file "Orange-Slovensko" "0B00,0609" "Orange SK"                 # some channels are shared to the AntikSat provider (package), so this one "orangesk" package is also needed for "antiksat" (as the CAID=0B00)
