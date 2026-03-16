@@ -1,0 +1,33 @@
+name: Generate OSCam SRVID
+
+on:
+  workflow_dispatch: # يتيح لك تشغيل السكربت يدوياً بضغطة زر
+  schedule:
+    - cron: '0 0 * * 0' # يشتغل تلقائياً كل يوم أحد الساعة 12 ليلاً
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl grep sed
+
+      - name: Run Generator Script
+        run: |
+          chmod +x oscam-srvid-generator-kingofsat.sh
+          ./oscam-srvid-generator-kingofsat.sh
+        # تأكد أن السكربت يخرج ملفاً باسم oscam.srvid
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add *.srvid
+          git commit -m "Update oscam.srvid $(date)" || exit 0
+          git push
