@@ -1,48 +1,41 @@
-name: Generate OSCam SRVID
+name: Generate OSCam SRVID (OpenVision Style)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 * * *' # يعمل يومياً
 
 jobs:
-  build:
+  fetch:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Setup Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl grep sed coreutils
+          sudo apt-get install -y curl wget grep sed coreutils
 
-      - name: Run Generator Script
+      - name: Execute KingOfSat Script
         run: |
-          SCRIPT_DIR=$(find . -name "oscam-srvid-generator-kingofsat.sh" -exec dirname {} \;)
+          # البحث عن المجلد الصحيح
+          SCRIPT_PATH=$(find . -name "oscam-srvid-generator-kingofsat.sh")
+          SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+          chmod +x "$SCRIPT_PATH"
           cd "$SCRIPT_DIR"
-          chmod +x oscam-srvid-generator-kingofsat.sh
           
-          echo "جاري محاولة توليد الملفات..."
+          # خدعة تخطي الحماية: تظاهر بأنك متصفح حقيقي
+          export USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          
           # تشغيل السكربت
-          ./oscam-srvid-generator-kingofsat.sh || echo "السكربت واجه مشكلة في السحب"
-          
-          # عرض الملفات للتأكد من وجودها
-          ls -R
-          
-      - name: Commit and Push changes
+          ./oscam-srvid-generator-kingofsat.sh
+
+      - name: Save and Push Changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # محاولة إضافة أي ملفات ناتجة بدون التسبب في خطأ إذا لم توجد
-          git add *.srvid *.srvid2 **/*.srvid **/*.srvid2 2>/dev/null || true
-          
-          # التحقق من وجود تغييرات
-          if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "Update oscam.srvid $(date)"
-            git push
-          else
-            echo "لا توجد ملفات جديدة تم إنشاؤها من الموقع."
-          fi
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add -A
+          # إذا وجد تغييرات يرفعها، إذا لم يجد لا يظهر خطأ
+          git commit -m "Auto Update: $(date +'%Y-%m-%d')" || exit 0
+          git push
