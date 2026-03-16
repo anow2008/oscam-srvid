@@ -20,8 +20,8 @@ jobs:
 
       - name: Run Generator Script
         run: |
-          # الدخول للمسار الصحيح حسب صورتك
-          cd oscam-srvid/kingofsat
+          # البحث عن المجلد الذي يحتوي على السكربت والدخول إليه
+          cd $(find . -name "oscam-srvid-generator-kingofsat.sh" -exec dirname {} \;)
           chmod +x oscam-srvid-generator-kingofsat.sh
           ./oscam-srvid-generator-kingofsat.sh
 
@@ -29,7 +29,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # إضافة الملفات من المسار الصحيح
-          git add oscam-srvid/kingofsat/*.srvid
+          git add **/*.srvid
           git commit -m "Update oscam.srvid $(date)" || exit 0
           git push
