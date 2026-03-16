@@ -1,49 +1,30 @@
-name: Generate OSCam SRVID
+name: srvid.yml
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ master ]
   schedule:
-    - cron: '0 0 * * 0'
+    - cron:  '1 1 * * 0'
+
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl grep sed coreutils
+      - uses: actions/checkout@v2
+        with:
+          ref: 'master'
 
-      - name: Run Generator Script
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
+      - name: Fetch files
         run: |
-          # البحث عن مكان السكربت والدخول إليه
-          SCRIPT_DIR=$(find . -name "oscam-srvid-generator-kingofsat.sh" -exec dirname {} \;)
-          cd "$SCRIPT_DIR"
-          chmod +x oscam-srvid-generator-kingofsat.sh
-          
-          echo "جاري تشغيل السكربت..."
-          # تشغيل السكربت (أضفت ./ قبل الاسم للتأكد)
-          ./oscam-srvid-generator-kingofsat.sh
-          
-          echo "الملفات الموجودة بعد التشغيل:"
-          ls -R
-          
-      - name: Commit and Push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          # إضافة أي ملف srvid تم إنتاجه في أي مكان
-          git add **/*.srvid || true
-          git add **/*.srvid2 || true
-          
-          # التحقق إذا كان هناك تغييرات فعلاً قبل عمل الـ commit
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "لا توجد تغييرات جديدة لرفعها."
-          else
-            git commit -m "Update oscam.srvid $(date)"
-            git push
-          fi
+          sudo apt-get -q update
+          sudo apt-get install dos2unix
+          pip install --upgrade pip six autopep8 future 2to3
+          ./CI/build.sh
