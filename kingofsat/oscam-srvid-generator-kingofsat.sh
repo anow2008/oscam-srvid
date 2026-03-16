@@ -2,61 +2,87 @@
 
 HEADER="
 #################################################################################
-### - updated script for oscam.srvid generation
+### - the script serves as a generator of the 'oscam.srvid' file
+### - based on data parsing from website: http://en.KingOfSat.net/pack-XXXXXX.php
+### - script written by s3n0, 2021-03-02: https://github.com/s3n0
+### - script improved by Persian Prince, https://github.com/persianpros for OV
 #################################################################################
 "
 
+#################################################################################
+
 create_srvid_file()
 {
+    # التعديل: استخدام رابط HTTPS وإضافة Header يحاكي المتصفحات الحديثة بدقة
     URL="https://en.kingofsat.net/pack-${1,,}.php"
-    # استخدام User-Agent لمتصفح حقيقي حديث
-    UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     
-    echo "Downloading: ${1^^}..."
+    # محاكاة متصفح حقيقي بالكامل لتجاوز الحماية
+    USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    REFERER="https://en.kingofsat.net/"
 
-    # تحميل الصفحة
-    wget -q -O /tmp/kos.html --user-agent="$UA" --no-check-certificate "$URL"
-    
-    if [ -f /tmp/kos.html ]; then
-        # منطق جديد يعتمد على البحث عن الأرقام (SID) بجانب أسماء القنوات
-        # هذا التعديل يتجاهل الـ Classes ويركز على هيكل الجدول نفسه
-        grep -E 'class="(A3|s)"' /tmp/kos.html | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' > /tmp/raw_data.txt
+    if wget -q -O /tmp/kos.html --user-agent="$USER_AGENT" --header="Referer: $REFERER" --no-check-certificate "$URL"; then
+        echo "URL download successful:   ${URL}"
         
-        # تحويل البيانات الخام إلى تنسيق SRVID
-        while read -r line; do
-            if [[ $line =~ ^[0-9]+$ ]]; then
-                SID=$line
-                if [ ! -z "$CHNAME" ]; then
-                    printf "%s:%04X|%s|%s\n" "$CAIDS" "$SID" "${1^^}" "$CHNAME" >> "/tmp/oscam__${1,,}.srvid"
-                    CHNAME=""
-                fi
-            else
-                CHNAME=$line
-            fi
-        done < /tmp/raw_data.txt
+        # التعديل: منطق AWK معدل ليبحث عن الأسماء والـ SIDs في الكود الجديد للموقع
+        # قمت بتغيير طريقة استخراج البيانات لتعتمد على نصوص الجدول مباشرة
+        awk -F '>' -v CAIDS="${2}" -v PROVIDER="${1^^}" '
+            BEGIN { CHNAME = "invalid" }
+            /class="A3"/ { 
+                # تنظيف النص لاستخراج اسم القناة
+                n = split($2, a, "<");
+                CHNAME = a[1];
+                gsub(/^[ \t]+|[ \t]+$/, "", CHNAME);
+            }
+            /class="s"/ {
+                # تنظيف النص لاستخراج الـ SID (رقم القناة)
+                n = split($2, b, "<");
+                SID = b[1];
+                gsub(/[^0-9]/, "", SID); # التأكد أن الـ SID رقم فقط
+                if (CHNAME != "invalid" && SID != "") {
+                    printf "%s:%04X|%s|%s\n", CAIDS, SID, PROVIDER, CHNAME;
+                    CHNAME = "invalid";
+                }
+            }' /tmp/kos.html > "/tmp/oscam__${1,,}.srvid"
         
+        # التحقق إذا كان الملف الناتج يحتوي على بيانات
         if [ -s "/tmp/oscam__${1,,}.srvid" ]; then
-            echo "Successfully extracted data for ${1}"
+             echo -e "Success: Data extracted for ${1}\n"
         else
-            echo "No data found for ${1}. Maybe blocked by site?"
+             echo -e "Warning: File created but no data found for ${1}. Site might be blocking script.\n"
         fi
-        
-        rm -f /tmp/kos.html /tmp/raw_data.txt
+        rm -f /tmp/kos.html
+    else
+        echo "URL download failed !!! URL:  ${URL}"
     fi
 }
 
+#################################################################################
+
 echo "$HEADER"
+
 OSCAM_SRVID="oscam.srvid"
-echo "### File creation date: $(date '+%Y-%m-%d')" > $OSCAM_SRVID
 
-# إعداد الـ CAID للباقات (أمثلة)
-CAIDS="0500"
+# Check https://en.kingofsat.net/packages.php for possible package updates
+# Check https://wiki.streamboard.tv/wiki/Srvid for possible CaID
+
+### create temporary ".srvid" files:
+# ملاحظة: جرب باقة واحدة للتأكد
 create_srvid_file "bein" "0500"
-create_srvid_file "bis" "0500"
+create_srvid_file "osn" "0604"
+create_srvid_file "art" "0604"
+create_srvid_file "skygermany" "098D,09C4"
+create_srvid_file "skyitalia" "0919,093B,09CD"
+create_srvid_file "skylink" "0D03,0D70,0D96,0624"
+create_srvid_file "tivusat" "183D,183E,1856"
 
-# تجميع الملفات
+### تجميع الملفات:
+echo "$HEADER" > $OSCAM_SRVID
+echo -e "### File creation date: $(date '+%Y-%m-%d')\n" >> $OSCAM_SRVID
 cat /tmp/oscam__* >> $OSCAM_SRVID 2>/dev/null
 rm -f /tmp/oscam__*
 
-echo "--------------------------------------------------"
-echo "Final check: $(wc -l < $OSCAM_SRVID) lines created in $OSCAM_SRVID"
+if [ -s "$OSCAM_SRVID" ]; then
+    echo "All generated '.srvid' files have been merged into: ${OSCAM_SRVID}"
+else
+    echo "Error: Final file is empty. Please check internet connection or site access."
+fi
