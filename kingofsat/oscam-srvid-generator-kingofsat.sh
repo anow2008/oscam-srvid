@@ -13,42 +13,42 @@ HEADER="
 
 create_srvid_file()
 {
-    # INPUT ARGUMENTS:
-    #    $1 = the URL of the package list of channels with their data, on a specific http://en.KingOfSat.net/pack-XXXXX.php website (see below)
-    #    $2 = CAIDs (separated by comma) what is necessary for the provider
-    #
-    # EXAMPLE:      create_srvid_file "skylink" "0D96,0624"
-    #
-    # NOTE:         "${1^}" provides the first-character-upper string = "Provider"     "${1^^}" provides the upper-case string = "PROVIDER"     "${1}" provides the string = "provider"     "${1,,}" provides the lower-case string = "provider"
-    
-    # التعديل: تحويل الرابط إلى HTTPS لأن الموقع لم يعد يدعم HTTP العادي
+    # التعديل: استخدام HTTPS وإضافة وكيل مستخدم حديث
     URL="https://en.kingofsat.net/pack-${1,,}.php"
-    # التعديل: إضافة متصفح وهمي (User-Agent) لأن الموقع يحظر الـ wget الافتراضي
-    UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     
-    if wget -q -O /tmp/kos.html --user-agent="$UA" --no-check-certificate "$URL" > /dev/null 2>&1; then
-        echo "URL download successful:   ${URL}"
+    # تحميل الصفحة بصمت
+    if wget -q -O /tmp/kos.html --user-agent="$UA" --no-check-certificate "$URL"; then
+        echo "URL download successful: ${URL}"
         
-        # التعديل: تحديث الـ awk ليتعامل مع الأكواد الجديدة للموقع (Tags)
+        # التعديل: منطق awk جديد تماماً وأكثر دقة لسحب الـ SID والاسم
         awk -F '>' -v CAIDS="${2}" -v PROVIDER="${1^^}" '
-            BEGIN { CHNAME = "invalid" }
             /class="A3"/ { 
+                # استخراج اسم القناة من التاج A3
                 split($2, a, "<"); 
-                CHNAME = a[1];
+                temp_name = a[1];
             }
             /class="s"/ {
+                # استخراج الـ SID من التاج s
                 split($2, b, "<");
-                SID = b[1];
-                if (CHNAME != "invalid" && SID ~ /^[0-9]+$/) {
-                    printf "%s:%04X|%s|%s\n", CAIDS, SID, PROVIDER, CHNAME
-                    CHNAME = "invalid"
+                temp_sid = b[1];
+                # تنظيف الـ SID من أي مسافات والتأكد أنه رقم
+                gsub(/[[:space:]]/, "", temp_sid);
+                if (temp_name != "" && temp_sid ~ /^[0-9]+$/) {
+                    printf "%s:%04X|%s|%s\n", CAIDS, temp_sid, PROVIDER, temp_name;
+                    temp_name = ""; # تصفير المتغيرات للدورة القادمة
                 }
-              }' /tmp/kos.html > "/tmp/oscam__${1,,}.srvid"
+            }' /tmp/kos.html > "/tmp/oscam__${1,,}.srvid"
         
-        echo -e "The new file was created:  /tmp/oscam__${1,,}.srvid\n"
+        # التأكد إذا كان الملف الناتج يحتوي على بيانات فعلاً
+        if [ -s "/tmp/oscam__${1,,}.srvid" ]; then
+            echo -e "Success: Data extracted to /tmp/oscam__${1,,}.srvid\n"
+        else
+            echo -e "Warning: No data found in the page structure for ${1}.\n"
+        fi
         rm -f /tmp/kos.html
     else
-        echo "URL download failed !!! URL:  ${URL}"
+        echo "URL download failed !!! URL: ${URL}"
     fi
 }
 
@@ -56,98 +56,20 @@ create_srvid_file()
 
 echo "$HEADER"
 
-#OSCAM_SRVID="/tmp/oscam_-_merged-kingofsat.srvid"
 OSCAM_SRVID="oscam.srvid"
 
-# Check https://en.kingofsat.net/packages.php for possible package updates
-# Check https://wiki.streamboard.tv/wiki/Srvid for possible CaID
+echo "### File creation date: $(date '+%Y-%m-%d')" > $OSCAM_SRVID
 
 ### create temporary ".srvid" files:
-create_srvid_file "a1bg" "0B00"
-create_srvid_file "add" "0604"
-create_srvid_file "akta" "0500,0B00"
-create_srvid_file "allente" "0000"
-create_srvid_file "antiksat" "0B00"
-create_srvid_file "arabesque" "0500"
-create_srvid_file "arddigital" "FFFE"
-create_srvid_file "austriasat" "0D05"
-create_srvid_file "austriasatmagyar" "0D05"
-create_srvid_file "bbc" "0000"
+# جرب تشغل باقة واحدة زي beIN للتأكد
 create_srvid_file "bein" "0500"
-create_srvid_file "bigbangtv" "4347"
-create_srvid_file "bis" "0500,0100"
-create_srvid_file "boobles" "0000"
-#create_srvid_file "bulsatcom" "0604,5501,5581"
-create_srvid_file "canaldigitaal" "0100,0622"
-create_srvid_file "canal" "0000"
-create_srvid_file "cosmote" "0000"
-create_srvid_file "dsmart" "092B"
-create_srvid_file "digitv" "1802,1880"
-create_srvid_file "digitalb" "0B00"
-create_srvid_file "digiturk" "0D00,0664"
-# Movistar+ - Start #
-create_srvid_file "digitalplusa" "0100,1810"
-create_srvid_file "digitalplush" "1810"
-# Movistar+ - End #
-create_srvid_file "directone" "0000"
-create_srvid_file "direct2home" "0000"
-create_srvid_file "dolcetv" "092F"
-create_srvid_file "focussat" "0B02"
-create_srvid_file "fotelka" "0604"
-create_srvid_file "fransat" "0500"
-create_srvid_file "freesat" "0000"
-create_srvid_file "freesatro" "0000"
-create_srvid_file "hdplus" "1830"
-create_srvid_file "kabelkiosk" "0B00,09AF"
-create_srvid_file "magtisat" "0000"
-create_srvid_file "maxtv" "0500"
-create_srvid_file "mediaset" "1803"
-create_srvid_file "meo" "0100,1814"
-create_srvid_file "mtv" "0B00,0D00"
-create_srvid_file "mcafrica" "1800"
-# Platforma Canal+ - Start #
-create_srvid_file "ncplus" "0100,0B01"
-# Platforma Canal+ - End #
-create_srvid_file "numericable" "0100"
-create_srvid_file "neosat" "5581,4AEE,0B00"
-create_srvid_file "nos" "1802"
-create_srvid_file "nova" "0604"
-create_srvid_file "ntvrussia" "0000"
-create_srvid_file "orange" "0500"
-create_srvid_file "orangepl" "0500"
-create_srvid_file "orangeromania" "0500"
-create_srvid_file "orangesk" "0500"
-create_srvid_file "orfdigital" "0D05,0D95"
-create_srvid_file "pink" "091F"
-create_srvid_file "polaris" "2600"
-create_srvid_file "polsat" "1803,1861"
-create_srvid_file "rai" "0100,183D,183E,1856:4546,"
-create_srvid_file "sfr" "0000"
-create_srvid_file "skygermany" "1833,1834,1702,1722,09C4,09AF,098D"
-create_srvid_file "skydigital" "0963"
+create_srvid_file "osn" "0604"
+create_srvid_file "art" "0604"
+create_srvid_file "skygermany" "098D,09C4"
 create_srvid_file "skyitalia" "0919,093B,09CD"
-create_srvid_file "skylink" "0D03,0D70,0D96,0624"
-create_srvid_file "ssr" "0500"
-create_srvid_file "thome" "0B00"
-create_srvid_file "teammedia" "0000"
-create_srvid_file "telesat" "0100"
-create_srvid_file "tvnakarte" "0B00"
-create_srvid_file "tivusat" "183D,183E,1856:4546"
-create_srvid_file "tntsat" "0500"
-create_srvid_file "totaltv" "091F"
-create_srvid_file "tring" "0BAA"
-create_srvid_file "tvvlaanderen" "0100,0500"
-create_srvid_file "viasat" "090F,093E"
-create_srvid_file "viasatua" "090F,093E"
-create_srvid_file "visat" "0000"
-create_srvid_file "vivacom" "09BD"
-create_srvid_file "volnatelka" "0668,069A"
-create_srvid_file "xtra" "0000"
-create_srvid_file "zdfvision" "FFFE"
 
-### merge all generated ".srvid" files into one file + move this new file to the Oscam config-dir:
-echo "$HEADER" > $OSCAM_SRVID
-echo -e "### File creation date: $(date '+%Y-%m-%d')\n" >> $OSCAM_SRVID
+### تجميع الملفات:
 cat /tmp/oscam__* >> $OSCAM_SRVID
 rm -f /tmp/oscam__*
-[ -f "$OSCAM_SRVID" ] && echo "All generated '.srvid' files have been merged into one and moved to the directory:  ${OSCAM_SRVID}"
+
+[ -f "$OSCAM_SRVID" ] && echo "Done! Final file saved as: ${OSCAM_SRVID}"
