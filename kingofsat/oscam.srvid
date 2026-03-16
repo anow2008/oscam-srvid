@@ -1,9 +1,8 @@
 
 #################################################################################
-### - the script serves as a generator of the 'oscam.srvid' file
-### - based on data parsing from website: http://en.KingOfSat.net/pack-XXXXXX.php
-### - script updated for 2026 compatibility
+### - generator of the 'oscam.srvid' file
+### - updated for 2026 HTML structure
 #################################################################################
 
-### File creation date: 2026-03-16
+### Updated: Mon Mar 16 18:53:10 UTC 2026
 
