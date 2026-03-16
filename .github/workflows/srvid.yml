@@ -1,9 +1,9 @@
 name: Generate OSCam SRVID
 
 on:
-  workflow_dispatch: # تشغيل يدوياً
+  workflow_dispatch:
   schedule:
-    - cron: '0 0 * * 0' # تشغيل تلقائياً كل أحد
+    - cron: '0 0 * * 0'
 
 jobs:
   build:
@@ -20,7 +20,8 @@ jobs:
 
       - name: Run Generator Script
         run: |
-          cd oscam-srvid
+          # الدخول للمسار الصحيح حسب صورتك
+          cd oscam-srvid/kingofsat
           chmod +x oscam-srvid-generator-kingofsat.sh
           ./oscam-srvid-generator-kingofsat.sh
 
@@ -28,6 +29,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add oscam-srvid/*.srvid
+          # إضافة الملفات من المسار الصحيح
+          git add oscam-srvid/kingofsat/*.srvid
           git commit -m "Update oscam.srvid $(date)" || exit 0
           git push
