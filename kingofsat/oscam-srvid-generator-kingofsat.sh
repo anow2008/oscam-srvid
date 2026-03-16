@@ -21,19 +21,28 @@ create_srvid_file()
     #
     # NOTE:         "${1^}" provides the first-character-upper string = "Provider"     "${1^^}" provides the upper-case string = "PROVIDER"     "${1}" provides the string = "provider"     "${1,,}" provides the lower-case string = "provider"
     
-    URL="http://en.kingofsat.net/pack-${1,,}.php"
+    # التعديل: تحويل الرابط إلى HTTPS لأن الموقع لم يعد يدعم HTTP العادي
+    URL="https://en.kingofsat.net/pack-${1,,}.php"
+    # التعديل: إضافة متصفح وهمي (User-Agent) لأن الموقع يحظر الـ wget الافتراضي
+    UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
     
-    if wget -q -O /tmp/kos.html --no-check-certificate "$URL" > /dev/null 2>&1; then
+    if wget -q -O /tmp/kos.html --user-agent="$UA" --no-check-certificate "$URL" > /dev/null 2>&1; then
         echo "URL download successful:   ${URL}"
         
-        awk -F '>' -v CAIDS="${2}" -v PROVIDER="${1^^}" -e '
+        # التعديل: تحديث الـ awk ليتعامل مع الأكواد الجديدة للموقع (Tags)
+        awk -F '>' -v CAIDS="${2}" -v PROVIDER="${1^^}" '
             BEGIN { CHNAME = "invalid" }
-            /<i>|class="A3"/ { CHNAME = substr($2,1,length($2) - 3) }
-            /class="s">[0-9]+/ {
-                SID = substr($2,1,length($2) - 4)
-                if (CHNAME == "invalid") next
-                printf "%s:%04X|%s|%s\n", CAIDS, SID, PROVIDER, CHNAME
-                CHNAME = "invalid"
+            /class="A3"/ { 
+                split($2, a, "<"); 
+                CHNAME = a[1];
+            }
+            /class="s"/ {
+                split($2, b, "<");
+                SID = b[1];
+                if (CHNAME != "invalid" && SID ~ /^[0-9]+$/) {
+                    printf "%s:%04X|%s|%s\n", CAIDS, SID, PROVIDER, CHNAME
+                    CHNAME = "invalid"
+                }
               }' /tmp/kos.html > "/tmp/oscam__${1,,}.srvid"
         
         echo -e "The new file was created:  /tmp/oscam__${1,,}.srvid\n"
@@ -135,6 +144,7 @@ create_srvid_file "vivacom" "09BD"
 create_srvid_file "volnatelka" "0668,069A"
 create_srvid_file "xtra" "0000"
 create_srvid_file "zdfvision" "FFFE"
+
 ### merge all generated ".srvid" files into one file + move this new file to the Oscam config-dir:
 echo "$HEADER" > $OSCAM_SRVID
 echo -e "### File creation date: $(date '+%Y-%m-%d')\n" >> $OSCAM_SRVID
