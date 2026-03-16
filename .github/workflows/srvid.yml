@@ -1,41 +1,34 @@
-name: Generate OSCam SRVID (OpenVision Style)
+name: Generate OSCam SRVID
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # يعمل يومياً
+    - cron: '0 0 * * 0'
 
 jobs:
-  fetch:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Environment
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl wget grep sed coreutils
+          sudo apt-get install -y curl grep sed
 
-      - name: Execute KingOfSat Script
+      - name: Run Generator Script
         run: |
-          # البحث عن المجلد الصحيح
-          SCRIPT_PATH=$(find . -name "oscam-srvid-generator-kingofsat.sh")
-          SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
-          chmod +x "$SCRIPT_PATH"
-          cd "$SCRIPT_DIR"
-          
-          # خدعة تخطي الحماية: تظاهر بأنك متصفح حقيقي
-          export USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-          
-          # تشغيل السكربت
+          # البحث عن المجلد الذي يحتوي على السكربت والدخول إليه
+          cd $(find . -name "oscam-srvid-generator-kingofsat.sh" -exec dirname {} \;)
+          chmod +x oscam-srvid-generator-kingofsat.sh
           ./oscam-srvid-generator-kingofsat.sh
 
-      - name: Save and Push Changes
+      - name: Commit and Push changes
         run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Action Bot"
-          git add -A
-          # إذا وجد تغييرات يرفعها، إذا لم يجد لا يظهر خطأ
-          git commit -m "Auto Update: $(date +'%Y-%m-%d')" || exit 0
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add **/*.srvid
+          git commit -m "Update oscam.srvid $(date)" || exit 0
           git push
