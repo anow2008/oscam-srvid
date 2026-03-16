@@ -1,1 +1,10 @@
+
+#################################################################################
+### - the script serves as a generator of the 'oscam.srvid' file
+### - based on data parsing from website: http://en.KingOfSat.net/pack-XXXXXX.php
+### - script written by s3n0, 2021-03-02: https://github.com/s3n0
+### - script improved by Persian Prince, https://github.com/persianpros for OV
+#################################################################################
+
 ### File creation date: 2026-03-16
+
