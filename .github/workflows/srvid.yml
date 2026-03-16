@@ -1,30 +1,48 @@
-name: srvid.yml
+name: Generate OSCam SRVID
 
 on:
-  push:
-    branches: [ master ]
-  schedule:
-    - cron:  '1 1 * * 0'
-
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v2
-        with:
-          ref: 'master'
-
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Fetch files
+      - name: Install dependencies
         run: |
-          sudo apt-get -q update
-          sudo apt-get install dos2unix
-          pip install --upgrade pip six autopep8 future 2to3
-          ./CI/build.sh
+          sudo apt-get update
+          sudo apt-get install -y curl grep sed coreutils
+
+      - name: Run Generator Script
+        run: |
+          SCRIPT_DIR=$(find . -name "oscam-srvid-generator-kingofsat.sh" -exec dirname {} \;)
+          cd "$SCRIPT_DIR"
+          chmod +x oscam-srvid-generator-kingofsat.sh
+          
+          echo "جاري محاولة توليد الملفات..."
+          # تشغيل السكربت
+          ./oscam-srvid-generator-kingofsat.sh || echo "السكربت واجه مشكلة في السحب"
+          
+          # عرض الملفات للتأكد من وجودها
+          ls -R
+          
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # محاولة إضافة أي ملفات ناتجة بدون التسبب في خطأ إذا لم توجد
+          git add *.srvid *.srvid2 **/*.srvid **/*.srvid2 2>/dev/null || true
+          
+          # التحقق من وجود تغييرات
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Update oscam.srvid $(date)"
+            git push
+          else
+            echo "لا توجد ملفات جديدة تم إنشاؤها من الموقع."
+          fi
