@@ -18,13 +18,7 @@ jobs:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
       - name: Generate
-        run: |
-          if [ -f oscam.srvid ]; then
-            python3 kos_srvid_generator.py --from-file oscam.srvid -o new.srvid
-            mv new.srvid oscam.srvid
-          else
-            python3 kos_srvid_generator.py -o oscam.srvid
-          fi
+        run: python3 kos_srvid_generator.py -o oscam.srvid
       - uses: actions/upload-artifact@v4
         with:
           name: oscam.srvid
