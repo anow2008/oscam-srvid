@@ -9,7 +9,8 @@ Free-to-air channels get CAID 0000.
 
 Usage examples:
     pip install requests beautifulsoup4
-    python3 kos_srvid_generator.py                       # all packages found on /packages
+    python3 kos_srvid_generator.py                       # uses packages.txt if present, else all packages on /packages
+    python3 kos_srvid_generator.py --packs-file packages.txt
     python3 kos_srvid_generator.py --from-file oscam.srvid   # only the packages in your old file
     python3 kos_srvid_generator.py --packs skydigital ncplus canal
     python3 kos_srvid_generator.py --debug skydigital    # print parsed rows of one package, no file written
@@ -66,6 +67,17 @@ def discover_packs():
         if m and m.group(1) not in slugs:
             slugs.append(m.group(1))
     return slugs
+
+
+def packs_from_txt(path):
+    """One slug per line; anything after '#' is a comment, '#slug' disables the package."""
+    packs = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            slug = line.split("#", 1)[0].strip().split()
+            if slug and slug[0] not in packs:
+                packs.append(slug[0])
+    return packs
 
 
 def packs_from_old_file(path):
@@ -140,6 +152,7 @@ def parse_pack(slug):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--packs", nargs="*", help="package slugs, e.g. skydigital ncplus")
+    ap.add_argument("--packs-file", help="text file with package slugs (default: packages.txt if it exists)")
     ap.add_argument("--from-file", help="read package list from an existing oscam.srvid")
     ap.add_argument("--debug", metavar="SLUG", help="print parsed rows of one package and exit")
     ap.add_argument("-o", "--output", default="oscam.srvid")
@@ -151,8 +164,11 @@ def main():
             print(row)
         return
 
+    import os
     if args.packs:
         packs = args.packs
+    elif args.packs_file or (not args.from_file and os.path.exists("packages.txt")):
+        packs = packs_from_txt(args.packs_file or "packages.txt")
     elif args.from_file:
         packs = packs_from_old_file(args.from_file)
     else:
