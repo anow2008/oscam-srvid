@@ -1,0 +1,38 @@
+name: Generate oscam.srvid
+
+on:
+  workflow_dispatch:        # زرار تشغيل يدوي
+  schedule:
+    - cron: "0 3 * * 0"     # كل أحد 3 الفجر (اختياري)
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Generate
+        run: |
+          if [ -f oscam.srvid ]; then
+            python3 kos_srvid_generator.py --from-file oscam.srvid -o new.srvid
+            mv new.srvid oscam.srvid
+          else
+            python3 kos_srvid_generator.py -o oscam.srvid
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oscam.srvid
+          path: oscam.srvid
+      - name: Commit result
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add oscam.srvid
+          git diff --cached --quiet || git commit -m "Update oscam.srvid"
+          git push
